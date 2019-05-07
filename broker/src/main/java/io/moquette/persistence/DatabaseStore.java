@@ -272,7 +272,7 @@ public class DatabaseStore {
 
         try {
             connection = DBUtil.getConnection();
-            String sql = "select `_uid`, `_friend_uid`, `_state`, `_dt` from t_friend";
+            String sql = "select `_uid`, `_friend_uid`, `_alias`, `_state`, `_dt` from t_friend";
             statement = connection.prepareStatement(sql);
 
             int index;
@@ -290,6 +290,9 @@ public class DatabaseStore {
                 value = (value == null ? "" : value);
                 builder.setFriendUid(value);
 
+                value = rs.getString(index++);
+                value = (value == null ? "" : value);
+                builder.setAlias(value);
 
                 int intvalue = rs.getInt(index++);
                 builder.setState(intvalue);
@@ -537,23 +540,25 @@ public class DatabaseStore {
         List<WFCMessage.Message> messages = loadRemoteMessagesFromTable(user, conversation, beforeUid, count, MessageShardingUtil.getMessageTable(beforeUid));
         if (messages != null && messages.size() < count) {
             String nexTable = MessageShardingUtil.getPreviousMessageTable(beforeUid);
-            List<WFCMessage.Message> nextMessages = loadRemoteMessagesFromTable(user, conversation, beforeUid, count-messages.size(), nexTable);
-            if (nextMessages != null) {
-                messages.addAll(nextMessages);
+            if (!StringUtil.isNullOrEmpty(nexTable)) {
+                List<WFCMessage.Message> nextMessages = loadRemoteMessagesFromTable(user, conversation, beforeUid, count - messages.size(), nexTable);
+                if (nextMessages != null) {
+                    messages.addAll(nextMessages);
+                }
             }
         }
         return messages;
     }
 
     List<WFCMessage.Message> loadRemoteMessagesFromTable(String user, WFCMessage.Conversation conversation, long beforeUid, int count, String table) {
-        String sql = "select  `_from`, `_type`, `_target`, `_line`, `_data`, `_dt` from " + table +" where";
+        String sql = "select `_mid`, `_from`, `_type`, `_target`, `_line`, `_data`, `_dt` from " + table +" where";
         if (conversation.getType() == ProtoConstants.ConversationType.ConversationType_Private) {
-            sql += " _type = ? and _line = ? and _mid > ? and ((_target = ?  and _from = ?) or (_target = ?  and _from = ?)";
+            sql += " _type = ? and _line = ? and _mid < ? and ((_target = ?  and _from = ?) or (_target = ?  and _from = ?)";
         } else {
-            sql += " _type = ? and _line = ? and _mid > ? and _target = ?";
+            sql += " _type = ? and _line = ? and _mid < ? and _target = ?";
         }
 
-        sql += " limit ?";
+        sql += "order by `_mid` DESC limit ?";
 
         Connection connection = null;
         PreparedStatement statement = null;
@@ -598,7 +603,7 @@ public class DatabaseStore {
         } finally {
             DBUtil.closeDB(connection, statement, resultSet);
         }
-        return null;
+        return out;
     }
 
     void persistUserMessage(final String userId, final long messageId, final long messageSeq) {
@@ -1775,7 +1780,7 @@ public class DatabaseStore {
         ResultSet rs = null;
         try {
             connection = DBUtil.getConnection();
-            String sql = "select `_friend_uid`, `_state`, `_dt` from t_friend where `_uid` = ?";
+            String sql = "select `_friend_uid`, `_alias`, `_state`, `_dt` from t_friend where `_uid` = ?";
             statement = connection.prepareStatement(sql);
 
 
@@ -1787,10 +1792,11 @@ public class DatabaseStore {
             List<FriendData> out = new ArrayList<>();
             while (rs.next()) {
                 String uid = rs.getString(1);
-                int state = rs.getInt(2);
-                long timestamp = rs.getLong(3);
+                String alias = rs.getString(2);
+                int state = rs.getInt(3);
+                long timestamp = rs.getLong(4);
 
-                FriendData data = new FriendData(userId, uid, state, timestamp);
+                FriendData data = new FriendData(userId, uid, alias, state, timestamp);
                 out.add(data);
             }
             return out;
@@ -1945,8 +1951,9 @@ public class DatabaseStore {
             PreparedStatement statement = null;
             try {
                 connection = DBUtil.getConnection();
-                String sql = "insert into t_friend (`_uid`, `_friend_uid`, `_state`, `_dt`) values(?, ?, ?, ?)" +
+                String sql = "insert into t_friend (`_uid`, `_friend_uid`, `_alias`, `_state`, `_dt`) values(?, ?, ?, ?, ?)" +
                     " ON DUPLICATE KEY UPDATE " +
+                    "`_alias` = ?," +
                     "`_state` = ?," +
                     "`_dt` = ?";
 
@@ -1955,8 +1962,10 @@ public class DatabaseStore {
                 int index = 1;
                 statement.setString(index++, request.getUserId());
                 statement.setString(index++, request.getFriendUid());
+                statement.setString(index++, request.getAlias());
                 statement.setInt(index++, request.getState());
                 statement.setLong(index++, request.getTimestamp());
+                statement.setString(index++, request.getAlias());
                 statement.setInt(index++, request.getState());
                 statement.setLong(index++, request.getTimestamp());
                 int count = statement.executeUpdate();

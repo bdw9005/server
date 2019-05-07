@@ -15,9 +15,15 @@ import org.fusesource.hawtbuf.Buffer;
 import org.fusesource.hawtbuf.UTF8Buffer;
 import org.fusesource.mqtt.client.*;
 
-import java.io.IOException;
+import java.io.*;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Base64;
+import java.util.List;
+
+import static cn.wildfirechat.client.IMClient.ConnectionStatus.ConnectionStatus_Connected;
+import static cn.wildfirechat.client.IMClient.ConnectionStatus.ConnectionStatus_Connecting;
+import static cn.wildfirechat.client.IMClient.ConnectionStatus.ConnectionStatus_Unconnected;
 
 
 public class IMClient implements Listener {
@@ -26,6 +32,8 @@ public class IMClient implements Listener {
     private final String clientId;
     private final String host;
     private final int port;
+    private ConnectionStatusCallback connectionStatusCallback;
+    private ReceiveMessageCallback receiveMessageCallback;
 
     protected String mqttServerIp;
     protected long mqttServerPort;
@@ -34,23 +42,51 @@ public class IMClient implements Listener {
 
     private long messageHead;
 
+    private transient MQTT mqtt = new MQTT();
+    private transient CallbackConnection connection = null;
+
+    interface ReceiveMessageCallback {
+        void onReceiveMessages(List<WFCMessage.Message> messageList, boolean hasMore);
+        void onRecallMessage(long messageUid);
+    }
+
+    interface ConnectionStatusCallback {
+        void onConnectionStatusChanged(ConnectionStatus newStatus);
+    }
+
+    interface SendMessageCallback {
+        void onSuccess(long messageUid, long timestamp);
+        void onFailure(int errorCode);
+    }
+
+    public enum ConnectionStatus {
+        ConnectionStatus_Unconnected,
+        ConnectionStatus_Connecting,
+        ConnectionStatus_Connected,
+    }
+
     public IMClient(String userId, String token, String clientId, String host, int port) {
         this.userId = userId;
-        this.token = token;
+
+        byte[] data = Base64.getDecoder().decode(token);
+        data = AES.AESDecrypt(data, commonSecret, false);
+        String s = new String(data);
+        String[] ss = s.split("\\|");
+
+        this.token = ss[0];
+        this.privateSecret = ss[1];
         this.clientId = clientId;
         this.host = host;
         this.port = port;
         AES.init(commonSecret);
     }
 
-    private transient MQTT mqtt = new MQTT();
-    private transient CallbackConnection connection = null;
 
     public void connect() {
         if(route(userId, token)) {
             try {
                 mqtt.setHost("tcp://" + mqttServerIp + ":" + mqttServerPort);
-                mqtt.setVersion("1.1");
+                mqtt.setVersion("3.1.1");
                 mqtt.setKeepAlive((short)180);
 
                 mqtt.setClientId(clientId);
@@ -64,6 +100,11 @@ public class IMClient implements Listener {
 
                 connection = mqtt.callbackConnection();
                 connection.listener(this);
+
+                //connecting
+                if(connectionStatusCallback != null) {
+                    connectionStatusCallback.onConnectionStatusChanged(ConnectionStatus_Connecting);
+                }
                 connection.connect(new Callback<byte[]>() {
                     @Override
                     public void onSuccess(byte[] value) {
@@ -77,12 +118,20 @@ public class IMClient implements Listener {
                             }
 
                         }
+
                         System.out.println("on connect success");
+                        //connected
+                        if(connectionStatusCallback != null) {
+                            connectionStatusCallback.onConnectionStatusChanged(ConnectionStatus_Connected);
+                        }
                     }
 
                     @Override
                     public void onFailure(Throwable value) {
                         System.out.println("on connect failure");
+                        if(connectionStatusCallback != null) {
+                            connectionStatusCallback.onConnectionStatusChanged(ConnectionStatus_Unconnected);
+                        }
                     }
                 });
 
@@ -93,19 +142,33 @@ public class IMClient implements Listener {
         }
     }
 
-    public void sendMessage(WFCMessage.Conversation conversation, WFCMessage.MessageContent messageContent) {
+    public void sendMessage(WFCMessage.Conversation conversation, WFCMessage.MessageContent messageContent, final SendMessageCallback callback) {
         WFCMessage.Message message = WFCMessage.Message.newBuilder().setConversation(conversation).setContent(messageContent).setFromUser(userId).build();
         byte[] data = message.toByteArray();
         data = AES.AESEncrypt(data, privateSecret);
         connection.publish("MS", data, QoS.AT_LEAST_ONCE, false, new Callback<byte[]>() {
             @Override
             public void onSuccess(byte[] value) {
+                if (value[0] == 0) {
+                    byte[] data = new byte[value.length-1];
+                    for (int i = 0; i < data.length; i++) {
+                        data[i] = value[i+1];
+                    }
 
+                    data = AES.AESDecrypt(data, privateSecret, true);
+                    ByteBuffer buffer = ByteBuffer.wrap(data, 0,16);
+
+                    long messageUid = buffer.getLong();
+                    long timestamp = buffer.getLong();
+                    callback.onSuccess(messageUid, timestamp);
+                } else {
+                    callback.onFailure(value[0]);
+                }
             }
 
             @Override
             public void onFailure(Throwable value) {
-
+                callback.onFailure(-1);
             }
         });
     }
@@ -120,14 +183,26 @@ public class IMClient implements Listener {
             inputRoute.setClientId(clientId);
             inputRoute.setToken(token);
 
-            WFCMessage.IMHttpWrapper request = WFCMessage.IMHttpWrapper.newBuilder().setClientId(clientId).setToken(token).setRequest("ROUTE").setData(ByteString.copyFrom(token.getBytes())).build();
-            byte[] data = AES.AESEncrypt(request.toByteArray(), commonSecret);
+            WFCMessage.RouteRequest routeRequest = WFCMessage.RouteRequest.newBuilder().setPlatform(0).build();
+
+            WFCMessage.IMHttpWrapper request = WFCMessage.IMHttpWrapper.newBuilder().setClientId(clientId).setToken(token).setRequest("ROUTE").setData(ByteString.copyFrom(routeRequest.toByteArray())).build();
+            byte[] data = AES.AESEncrypt(request.toByteArray(), privateSecret);
             data = Base64.getEncoder().encode(data);
 
             StringEntity entity = new StringEntity(new String(data), Charset.forName("UTF-8"));
             entity.setContentEncoding("UTF-8");
             entity.setContentType("application/json");
             httpPost.setEntity(entity);
+
+            byte[] cidByte = AES.AESEncrypt(clientId.getBytes(), commonSecret);
+            cidByte = Base64.getEncoder().encode(cidByte);
+            String cid = new String(cidByte);
+            httpPost.setHeader("cid", cid);
+
+            byte[] uidByte = AES.AESEncrypt(userId.getBytes(), commonSecret);
+            uidByte = Base64.getEncoder().encode(uidByte);
+            String uid = new String(uidByte);
+            httpPost.setHeader("uid", uid);
 
 
             HttpResponse response = httpClient.execute(httpPost);
@@ -146,7 +221,7 @@ public class IMClient implements Listener {
                             for (int i = 0; i < bytes1.length; i++) {
                                 bytes1[i] = bytes[i+1];
                             }
-                            byte[] rawData = AES.AESDecrypt(bytes1, "", true);
+                            byte[] rawData = AES.AESDecrypt(bytes1, privateSecret, true);
                             WFCMessage.RouteResponse routeResponse = WFCMessage.RouteResponse.parseFrom(rawData);
                             mqttServerIp = routeResponse.getHost();
                             mqttServerPort = routeResponse.getLongPort();
@@ -174,11 +249,17 @@ public class IMClient implements Listener {
     @Override
     public void onConnected() {
         System.out.println("onConnected");
+        if(connectionStatusCallback != null) {
+            connectionStatusCallback.onConnectionStatusChanged(ConnectionStatus_Connecting);
+        }
     }
 
     @Override
     public void onDisconnected() {
         System.out.println("onDisconnected");
+        if(connectionStatusCallback != null) {
+            connectionStatusCallback.onConnectionStatusChanged(ConnectionStatus_Unconnected);
+        }
     }
 
     @Override
@@ -196,9 +277,14 @@ public class IMClient implements Listener {
                             byte[] data = AES.AESDecrypt(value, privateSecret, true);
                             try {
                                 WFCMessage.PullMessageResult result = WFCMessage.PullMessageResult.parseFrom(data);
+                                if (receiveMessageCallback != null) {
+                                    receiveMessageCallback.onReceiveMessages(result.getMessageList(), false);
+                                }
+                                messageHead = result.getHead();
                             } catch (InvalidProtocolBufferException e) {
                                 e.printStackTrace();
                             }
+
                             System.out.println("onSuccess");
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -220,11 +306,55 @@ public class IMClient implements Listener {
     @Override
     public void onFailure(Throwable value) {
         System.out.println("onDisconnected" + value.toString());
+        if(connectionStatusCallback != null) {
+            connectionStatusCallback.onConnectionStatusChanged(ConnectionStatus_Unconnected);
+        }
+    }
+
+    public void setConnectionStatusCallback(ConnectionStatusCallback connectionStatusCallback) {
+        this.connectionStatusCallback = connectionStatusCallback;
+    }
+
+    public void setReceiveMessageCallback(ReceiveMessageCallback receiveMessageCallback) {
+        this.receiveMessageCallback = receiveMessageCallback;
     }
 
     public static void main(String[] args) {
-        IMClient client = new IMClient("-C-3-3KK","hN0AF2XX6+o1vf6UIC4Fo5O6E+EWC2nmnZd7xZi4SlU=", "1234", "im.liyufan.win", 80);
+        //token与userid和clientid是绑定的，使用时一定要传入正确的userid和clientid，不然会认为token非法
+        IMClient client = new IMClient("yzyOyOKK", "7SJk13q+YdHHe6EwDzry9BKogxTNf3UgtYj50cBTZgWNkNuxEkiqg2koKg0lXViONIX1LmwCR1jN0Mw8hvk6KGpiSKFi+IRaRkIb3mNzgIfrq4afhyIHaQfa2HOfsi6Ws+9YobkdDgdq7W70bEdVfiCSU9+JOIY449nxZzfg2Zw=", "DD72C212-26C7-4B38-A5FC-88550896B170", "192.168.1.101", 80);
+
+        client.setReceiveMessageCallback(new ReceiveMessageCallback() {
+            @Override
+            public void onReceiveMessages(List<WFCMessage.Message> messageList, boolean hasMore) {
+
+            }
+
+            @Override
+            public void onRecallMessage(long messageUid) {
+
+            }
+        });
+
+        client.setConnectionStatusCallback((ConnectionStatus newStatus) -> {
+            if (newStatus == ConnectionStatus_Connected) {
+                WFCMessage.Conversation conversation = WFCMessage.Conversation.newBuilder().setType(0).setTarget("yzyOyOKK").setLine(0).build();
+                WFCMessage.MessageContent messageContent = WFCMessage.MessageContent.newBuilder().setContent("helloworld").setType(1).build();
+                client.sendMessage(conversation, messageContent, new SendMessageCallback() {
+                    @Override
+                    public void onSuccess(long messageUid, long timestamp) {
+                        System.out.println("send success");
+                    }
+
+                    @Override
+                    public void onFailure(int errorCode) {
+                        System.out.println("send failure");
+                    }
+                });
+            }
+        });
+
         client.connect();
+
         try {
             Thread.sleep(1000000);
         } catch (InterruptedException e) {

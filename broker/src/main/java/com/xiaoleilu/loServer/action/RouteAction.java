@@ -36,7 +36,7 @@ import java.util.concurrent.Executor;
 public class RouteAction extends Action {
     private static final Logger LOG = LoggerFactory.getLogger(RouteAction.class);
     @Override
-    public void action(Request request, Response response) {
+    public boolean action(Request request, Response response) {
         if (request.getNettyRequest() instanceof FullHttpRequest) {
 
             response.setContentType("application/octet-stream");
@@ -55,24 +55,24 @@ public class RouteAction extends Action {
                 bytes = Base64.getDecoder().decode(str);
             } catch (IllegalArgumentException e) {
                 sendResponse(response, ErrorCode.ERROR_CODE_SECRECT_KEY_MISMATCH, null, base64Response);
-                return;
+                return true;
             }
 
             String cid = fullHttpRequest.headers().get("cid");
             byte[] cbytes = Base64.getDecoder().decode(cid);
-            cbytes = AES.AESDecrypt(cbytes, null, true);
+            cbytes = AES.AESDecrypt(cbytes, "", true);
             if (cbytes == null) {
                 sendResponse(response, ErrorCode.ERROR_CODE_SECRECT_KEY_MISMATCH, null, base64Response);
-                return;
+                return true;
             }
             cid = new String(cbytes);
 
             String uid = fullHttpRequest.headers().get("uid");
             byte[] ubytes = Base64.getDecoder().decode(uid);
-            ubytes = AES.AESDecrypt(ubytes, null, true);
+            ubytes = AES.AESDecrypt(ubytes, "", true);
             if (ubytes == null) {
                 sendResponse(response, ErrorCode.ERROR_CODE_SECRECT_KEY_MISMATCH, null, base64Response);
-                return;
+                return true;
             }
             uid = new String(ubytes);
 
@@ -82,7 +82,7 @@ public class RouteAction extends Action {
                 ErrorCode errorCode = sessionsStore.createNewSession(uid, cid, true);
                 if (errorCode != ErrorCode.ERROR_CODE_SUCCESS) {
                     sendResponse(response, errorCode, null, base64Response);
-                    return;
+                    return true;
                 }
                 session = sessionsStore.sessionForClientAndUser(uid, cid);
             }
@@ -92,13 +92,13 @@ public class RouteAction extends Action {
                 bytes = AES.AESDecrypt(bytes, session.getSecret(), true);
             } else {
                 sendResponse(response, ErrorCode.ERROR_CODE_SECRECT_KEY_MISMATCH, null, base64Response);
-                return;
+                return true;
             }
 
 
             if (bytes == null) {
                 sendResponse(response, ErrorCode.ERROR_CODE_SECRECT_KEY_MISMATCH, null, base64Response);
-                return;
+                return true;
             }
 
 
@@ -133,11 +133,13 @@ public class RouteAction extends Action {
                             };
                         }
                     }, false);
+                    return false;
                 }
             } catch (InvalidProtocolBufferException e) {
                 sendResponse(response, ErrorCode.ERROR_CODE_INVALID_DATA, null, false);
             }
         }
+        return true;
     }
 
     private void sendResponse(Response response, ErrorCode errorCode, byte[] contents, boolean base64Response) {

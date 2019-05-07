@@ -43079,6 +43079,21 @@ public final class WFCMessage {
      * <code>required int64 update_dt = 3;</code>
      */
     long getUpdateDt();
+
+    // optional string alias = 4;
+    /**
+     * <code>optional string alias = 4;</code>
+     */
+    boolean hasAlias();
+    /**
+     * <code>optional string alias = 4;</code>
+     */
+    java.lang.String getAlias();
+    /**
+     * <code>optional string alias = 4;</code>
+     */
+    com.google.protobuf.ByteString
+        getAliasBytes();
   }
   /**
    * Protobuf type {@code Friend}
@@ -43144,6 +43159,11 @@ public final class WFCMessage {
             case 24: {
               bitField0_ |= 0x00000004;
               updateDt_ = input.readInt64();
+              break;
+            }
+            case 34: {
+              bitField0_ |= 0x00000008;
+              alias_ = input.readBytes();
               break;
             }
           }
@@ -43261,10 +43281,54 @@ public final class WFCMessage {
       return updateDt_;
     }
 
+    // optional string alias = 4;
+    public static final int ALIAS_FIELD_NUMBER = 4;
+    private java.lang.Object alias_;
+    /**
+     * <code>optional string alias = 4;</code>
+     */
+    public boolean hasAlias() {
+      return ((bitField0_ & 0x00000008) == 0x00000008);
+    }
+    /**
+     * <code>optional string alias = 4;</code>
+     */
+    public java.lang.String getAlias() {
+      java.lang.Object ref = alias_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          alias_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string alias = 4;</code>
+     */
+    public com.google.protobuf.ByteString
+        getAliasBytes() {
+      java.lang.Object ref = alias_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        alias_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private void initFields() {
       uid_ = "";
       state_ = 0;
       updateDt_ = 0L;
+      alias_ = "";
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -43299,6 +43363,9 @@ public final class WFCMessage {
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         output.writeInt64(3, updateDt_);
       }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        output.writeBytes(4, getAliasBytes());
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -43319,6 +43386,10 @@ public final class WFCMessage {
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
           .computeInt64Size(3, updateDt_);
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(4, getAliasBytes());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -43442,6 +43513,8 @@ public final class WFCMessage {
         bitField0_ = (bitField0_ & ~0x00000002);
         updateDt_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000004);
+        alias_ = "";
+        bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
 
@@ -43482,6 +43555,10 @@ public final class WFCMessage {
           to_bitField0_ |= 0x00000004;
         }
         result.updateDt_ = updateDt_;
+        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+          to_bitField0_ |= 0x00000008;
+        }
+        result.alias_ = alias_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -43508,6 +43585,11 @@ public final class WFCMessage {
         }
         if (other.hasUpdateDt()) {
           setUpdateDt(other.getUpdateDt());
+        }
+        if (other.hasAlias()) {
+          bitField0_ |= 0x00000008;
+          alias_ = other.alias_;
+          onChanged();
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -43684,6 +43766,80 @@ public final class WFCMessage {
       public Builder clearUpdateDt() {
         bitField0_ = (bitField0_ & ~0x00000004);
         updateDt_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      // optional string alias = 4;
+      private java.lang.Object alias_ = "";
+      /**
+       * <code>optional string alias = 4;</code>
+       */
+      public boolean hasAlias() {
+        return ((bitField0_ & 0x00000008) == 0x00000008);
+      }
+      /**
+       * <code>optional string alias = 4;</code>
+       */
+      public java.lang.String getAlias() {
+        java.lang.Object ref = alias_;
+        if (!(ref instanceof java.lang.String)) {
+          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+              .toStringUtf8();
+          alias_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string alias = 4;</code>
+       */
+      public com.google.protobuf.ByteString
+          getAliasBytes() {
+        java.lang.Object ref = alias_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          alias_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string alias = 4;</code>
+       */
+      public Builder setAlias(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000008;
+        alias_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string alias = 4;</code>
+       */
+      public Builder clearAlias() {
+        bitField0_ = (bitField0_ & ~0x00000008);
+        alias_ = getDefaultInstance().getAlias();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string alias = 4;</code>
+       */
+      public Builder setAliasBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000008;
+        alias_ = value;
         onChanged();
         return this;
       }
@@ -56946,44 +57102,44 @@ public final class WFCMessage {
       "fyUserSettingReq\022\r\n\005scope\030\001 \002(\005\022\013\n\003key\030\002" +
       " \002(\t\022\r\n\005value\030\003 \002(\t\"\032\n\007Version\022\017\n\007versio" +
       "n\030\001 \002(\003\"8\n\024GetUserSettingResult\022 \n\005entry" +
-      "\030\001 \003(\0132\021.UserSettingEntry\"7\n\006Friend\022\013\n\003u" +
+      "\030\001 \003(\0132\021.UserSettingEntry\"F\n\006Friend\022\013\n\003u" +
       "id\030\001 \002(\t\022\r\n\005state\030\002 \002(\005\022\021\n\tupdate_dt\030\003 \002",
-      "(\003\"*\n\020GetFriendsResult\022\026\n\005entry\030\001 \003(\0132\007." +
-      "Friend\"7\n\026GetFriendRequestResult\022\035\n\005entr" +
-      "y\030\001 \003(\0132\016.FriendRequest\"\243\001\n\021ConnectAckPa" +
-      "yload\022\020\n\010msg_head\030\001 \001(\003\022\023\n\013friend_head\030\002" +
-      " \001(\003\022\026\n\016friend_rq_head\030\003 \001(\003\022\024\n\014setting_" +
-      "head\030\004 \001(\003\022\021\n\tnode_addr\030\005 \001(\t\022\021\n\tnode_po" +
-      "rt\030\006 \001(\005\022\023\n\013server_time\030\007 \001(\003\"P\n\rIMHttpW" +
-      "rapper\022\r\n\005token\030\001 \002(\t\022\021\n\tclient_id\030\002 \002(\t" +
-      "\022\017\n\007request\030\003 \002(\t\022\014\n\004data\030\004 \001(\014\"A\n\021Searc" +
-      "hUserRequest\022\017\n\007keyword\030\001 \002(\t\022\r\n\005fuzzy\030\002",
-      " \001(\005\022\014\n\004page\030\003 \001(\005\"(\n\020SearchUserResult\022\024" +
-      "\n\005entry\030\001 \003(\0132\005.User\"@\n\026GetChatroomInfoR" +
-      "equest\022\023\n\013chatroom_id\030\001 \002(\t\022\021\n\tupdate_dt" +
-      "\030\002 \001(\003\"\227\001\n\014ChatroomInfo\022\r\n\005title\030\001 \002(\t\022\014" +
-      "\n\004desc\030\002 \001(\t\022\020\n\010portrait\030\003 \001(\t\022\024\n\014member" +
-      "_count\030\004 \001(\005\022\021\n\tcreate_dt\030\005 \001(\003\022\021\n\tupdat" +
-      "e_dt\030\006 \001(\003\022\r\n\005extra\030\007 \001(\t\022\r\n\005state\030\010 \001(\005" +
-      "\"F\n\034GetChatroomMemberInfoRequest\022\023\n\013chat" +
-      "room_id\030\001 \002(\t\022\021\n\tmax_count\030\002 \001(\005\";\n\022Chat" +
-      "roomMemberInfo\022\024\n\014member_count\030\001 \001(\005\022\017\n\007",
-      "members\030\002 \003(\t\"\026\n\010INT64Buf\022\n\n\002id\030\001 \002(\003\"4\n" +
-      "\023NotifyRecallMessage\022\n\n\002id\030\001 \002(\003\022\021\n\tfrom" +
-      "_user\030\002 \002(\t\"/\n\020BlackUserRequest\022\013\n\003uid\030\001" +
-      " \002(\t\022\016\n\006status\030\002 \002(\005\"\323\001\n\014RouteRequest\022\013\n" +
-      "\003app\030\001 \001(\t\022\020\n\010platform\030\002 \001(\005\022\021\n\tpush_typ" +
-      "e\030\003 \001(\005\022\023\n\013device_name\030\004 \001(\t\022\026\n\016device_v" +
-      "ersion\030\005 \001(\t\022\022\n\nphone_name\030\006 \001(\t\022\020\n\010lang" +
-      "uage\030\007 \001(\t\022\024\n\014carrier_name\030\010 \001(\t\022\023\n\013app_" +
-      "version\030\t \001(\t\022\023\n\013sdk_version\030\n \001(\t\"D\n\rRo" +
-      "uteResponse\022\014\n\004host\030\001 \002(\t\022\021\n\tlong_port\030\002",
-      " \002(\005\022\022\n\nshort_port\030\003 \002(\005\"5\n\017GetTokenRequ" +
-      "est\022\017\n\007user_id\030\001 \002(\t\022\021\n\tclient_id\030\002 \002(\t\"" +
-      "\\\n\022LoadRemoteMessages\022#\n\014conversation\030\001 " +
-      "\002(\0132\r.Conversation\022\022\n\nbefore_uid\030\002 \002(\003\022\r" +
-      "\n\005count\030\003 \002(\005B#\n\025cn.wildfirechat.protoB\n" +
-      "WFCMessage"
+      "(\003\022\r\n\005alias\030\004 \001(\t\"*\n\020GetFriendsResult\022\026\n" +
+      "\005entry\030\001 \003(\0132\007.Friend\"7\n\026GetFriendReques" +
+      "tResult\022\035\n\005entry\030\001 \003(\0132\016.FriendRequest\"\243" +
+      "\001\n\021ConnectAckPayload\022\020\n\010msg_head\030\001 \001(\003\022\023" +
+      "\n\013friend_head\030\002 \001(\003\022\026\n\016friend_rq_head\030\003 " +
+      "\001(\003\022\024\n\014setting_head\030\004 \001(\003\022\021\n\tnode_addr\030\005" +
+      " \001(\t\022\021\n\tnode_port\030\006 \001(\005\022\023\n\013server_time\030\007" +
+      " \001(\003\"P\n\rIMHttpWrapper\022\r\n\005token\030\001 \002(\t\022\021\n\t" +
+      "client_id\030\002 \002(\t\022\017\n\007request\030\003 \002(\t\022\014\n\004data" +
+      "\030\004 \001(\014\"A\n\021SearchUserRequest\022\017\n\007keyword\030\001",
+      " \002(\t\022\r\n\005fuzzy\030\002 \001(\005\022\014\n\004page\030\003 \001(\005\"(\n\020Sea" +
+      "rchUserResult\022\024\n\005entry\030\001 \003(\0132\005.User\"@\n\026G" +
+      "etChatroomInfoRequest\022\023\n\013chatroom_id\030\001 \002" +
+      "(\t\022\021\n\tupdate_dt\030\002 \001(\003\"\227\001\n\014ChatroomInfo\022\r" +
+      "\n\005title\030\001 \002(\t\022\014\n\004desc\030\002 \001(\t\022\020\n\010portrait\030" +
+      "\003 \001(\t\022\024\n\014member_count\030\004 \001(\005\022\021\n\tcreate_dt" +
+      "\030\005 \001(\003\022\021\n\tupdate_dt\030\006 \001(\003\022\r\n\005extra\030\007 \001(\t" +
+      "\022\r\n\005state\030\010 \001(\005\"F\n\034GetChatroomMemberInfo" +
+      "Request\022\023\n\013chatroom_id\030\001 \002(\t\022\021\n\tmax_coun" +
+      "t\030\002 \001(\005\";\n\022ChatroomMemberInfo\022\024\n\014member_",
+      "count\030\001 \001(\005\022\017\n\007members\030\002 \003(\t\"\026\n\010INT64Buf" +
+      "\022\n\n\002id\030\001 \002(\003\"4\n\023NotifyRecallMessage\022\n\n\002i" +
+      "d\030\001 \002(\003\022\021\n\tfrom_user\030\002 \002(\t\"/\n\020BlackUserR" +
+      "equest\022\013\n\003uid\030\001 \002(\t\022\016\n\006status\030\002 \002(\005\"\323\001\n\014" +
+      "RouteRequest\022\013\n\003app\030\001 \001(\t\022\020\n\010platform\030\002 " +
+      "\001(\005\022\021\n\tpush_type\030\003 \001(\005\022\023\n\013device_name\030\004 " +
+      "\001(\t\022\026\n\016device_version\030\005 \001(\t\022\022\n\nphone_nam" +
+      "e\030\006 \001(\t\022\020\n\010language\030\007 \001(\t\022\024\n\014carrier_nam" +
+      "e\030\010 \001(\t\022\023\n\013app_version\030\t \001(\t\022\023\n\013sdk_vers" +
+      "ion\030\n \001(\t\"D\n\rRouteResponse\022\014\n\004host\030\001 \002(\t",
+      "\022\021\n\tlong_port\030\002 \002(\005\022\022\n\nshort_port\030\003 \002(\005\"" +
+      "5\n\017GetTokenRequest\022\017\n\007user_id\030\001 \002(\t\022\021\n\tc" +
+      "lient_id\030\002 \002(\t\"\\\n\022LoadRemoteMessages\022#\n\014" +
+      "conversation\030\001 \002(\0132\r.Conversation\022\022\n\nbef" +
+      "ore_uid\030\002 \002(\003\022\r\n\005count\030\003 \002(\005B#\n\025cn.wildf" +
+      "irechat.protoB\nWFCMessage"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -57301,7 +57457,7 @@ public final class WFCMessage {
           internal_static_Friend_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Friend_descriptor,
-              new java.lang.String[] { "Uid", "State", "UpdateDt", });
+              new java.lang.String[] { "Uid", "State", "UpdateDt", "Alias", });
           internal_static_GetFriendsResult_descriptor =
             getDescriptor().getMessageTypes().get(52);
           internal_static_GetFriendsResult_fieldAccessorTable = new
